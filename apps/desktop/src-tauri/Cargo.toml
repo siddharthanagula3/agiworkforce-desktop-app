@@ -138,7 +138,7 @@ flate2 = "1.0"
 zip = "0.6"
 
 # Document processing
-pdf-extract = "0.5"
+pdf-extract = "0.10"
 lopdf = "0.32"
 roxmltree = "0.20"
 calamine = "0.21"
