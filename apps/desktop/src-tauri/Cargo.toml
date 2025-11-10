@@ -122,7 +122,7 @@ sentry = { version = "0.33", optional = true }
 
 # WebRTC (P2P) - Optional, pulls GTK on Linux
 webrtc = { version = "0.9", optional = true }
-tokio-tungstenite = "0.21"
+tokio-tungstenite = "0.28"
 
 # WebSocket
 tungstenite = "0.21"
