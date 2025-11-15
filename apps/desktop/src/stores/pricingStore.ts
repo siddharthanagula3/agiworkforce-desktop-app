@@ -269,7 +269,7 @@ export const usePricingStore = create<PricingState>()(
     // Cost Estimate
     calculateEstimate: (hoursPerMonth: number, hourlyRate: number): CostEstimate => {
       const valueSaved = hoursPerMonth * hourlyRate;
-      const planCost = 39; // Pro plan cost
+      const planCost = 19.99; // Pro plan cost (aligned with competitive audit)
       const netSavings = valueSaved - planCost;
       const roiMultiplier = planCost > 0 ? valueSaved / planCost : 0;
 

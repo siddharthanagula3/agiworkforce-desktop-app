@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
-
-import { Check, Sparkles } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
+import { Check, Sparkles, TrendingDown, Zap } from 'lucide-react';
 import { usePricingStore } from '../../stores/pricingStore';
 import { PricingCalculator } from './PricingCalculator';
+import { CompetitorComparison } from './CompetitorComparison';
+import { UniqueDifferentiators } from './UniqueDifferentiators';
 import { cn } from '../../lib/utils';
 import type { PricingPlan } from '../../types/pricing';
 
@@ -27,7 +29,8 @@ export function PlansTab() {
     }
   };
 
-  // Hardcoded plans for demo (backend will provide these)
+  // Pricing tiers aligned with competitive audit recommendations
+  // See COMPETITIVE_AUDIT_2026.md for strategic positioning
   const demoPlans: PricingPlan[] = [
     {
       id: 'free',
@@ -36,60 +39,67 @@ export function PlansTab() {
       included_hours: 10,
       features: [
         '10 hours automation/month',
-        'Basic support',
-        'Community access',
-        'Core automation features',
+        'Local LLM support (Ollama)',
+        'Desktop & browser automation',
+        'Community support',
+        'Core features',
         'Single user',
       ],
-      description: 'Perfect for individuals getting started',
-    },
-    {
-      id: 'pay-per-result',
-      name: 'Pay-Per-Result',
-      pricing_model: 'pay_per_result',
-      price_per_automation_usd: 0.5,
-      features: [
-        '$0.50 per successful automation',
-        'Pay only for what works',
-        'Failed automations free',
-        'Email support',
-        'All automation features',
-        'Unlimited users',
-      ],
-      description: 'Zero risk, only pay for results',
+      description: 'Perfect for individuals exploring automation',
     },
     {
       id: 'pro',
       name: 'Pro',
       pricing_model: 'pro',
-      base_price_usd: 39,
+      base_price_usd: 19.99,
       is_popular: true,
       features: [
-        'Unlimited automations',
-        'Priority support',
-        'Advanced analytics',
-        'ROI dashboard',
-        'Custom integrations',
-        'Unlimited users',
+        'Unlimited automation hours',
+        'All LLM providers (GPT-4, Claude, Gemini)',
+        'Local LLM support (Ollama)',
+        'Priority email support',
+        'Advanced analytics & ROI tracking',
+        'Multi-agent orchestration (4 parallel)',
         'API access',
+        'Custom workflows',
       ],
-      description: 'Best value for growing teams',
+      description: '10x cheaper than Cursor - best for developers',
+    },
+    {
+      id: 'team',
+      name: 'Team',
+      pricing_model: 'team',
+      base_price_usd: 99,
+      features: [
+        'Everything in Pro',
+        '8 parallel agents',
+        'Team collaboration features',
+        'Shared knowledge base',
+        'Priority chat support',
+        'SSO & advanced security',
+        'Usage analytics per user',
+        'Custom integrations',
+        'Training & onboarding',
+      ],
+      description: '10-20x cheaper than UiPath - perfect for teams',
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
       pricing_model: 'enterprise',
       features: [
-        'Custom pricing',
-        'ROI guarantees',
-        'Dedicated support',
-        'Custom integrations',
+        'Everything in Team',
+        'Unlimited parallel agents',
+        'Custom deployment options',
+        'Dedicated account manager',
+        'ROI guarantee (12x minimum)',
         'SLA 99.9% uptime',
-        'On-premise deployment',
-        'Advanced security',
-        'Training & onboarding',
+        'On-premise deployment available',
+        'Advanced security & compliance',
+        'Custom model fine-tuning',
+        '24/7 phone support',
       ],
-      description: 'For organizations at scale',
+      description: 'For organizations requiring enterprise features',
     },
   ];
 
@@ -97,35 +107,63 @@ export function PlansTab() {
 
   return (
     <div className="p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Plans Grid */}
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {displayPlans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                isCurrentPlan={currentPlan?.id === plan.id}
-                onSelect={() => handleSelectPlan(plan.id)}
-              />
-            ))}
-          </div>
+      <Tabs defaultValue="plans" className="space-y-6">
+        {/* Sub-tabs */}
+        <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="comparison">
+            <TrendingDown className="h-4 w-4 mr-2" />
+            vs Competitors
+          </TabsTrigger>
+          <TabsTrigger value="features">
+            <Zap className="h-4 w-4 mr-2" />
+            Unique Features
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Feature Comparison */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Compare Features</h3>
-            <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground">
-              All plans include: Core automation features, Desktop & browser control, API integrations,
-              Knowledge base access, Regular updates, and data encryption.
+        {/* Plans Content */}
+        <TabsContent value="plans" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Plans Grid */}
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {displayPlans.map((plan) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isCurrentPlan={currentPlan?.id === plan.id}
+                    onSelect={() => handleSelectPlan(plan.id)}
+                  />
+                ))}
+              </div>
+
+              {/* Feature Comparison */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">What's Included</h3>
+                <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground">
+                  All plans include: Core automation features, Desktop & browser control, API
+                  integrations, Knowledge base access, Regular updates, and data encryption.
+                </div>
+              </div>
+            </div>
+
+            {/* Calculator */}
+            <div className="lg:col-span-1">
+              <PricingCalculator />
             </div>
           </div>
-        </div>
+        </TabsContent>
 
-        {/* Calculator */}
-        <div className="lg:col-span-1">
-          <PricingCalculator />
-        </div>
-      </div>
+        {/* Competitor Comparison Content */}
+        <TabsContent value="comparison">
+          <CompetitorComparison />
+        </TabsContent>
+
+        {/* Unique Features Content */}
+        <TabsContent value="features">
+          <UniqueDifferentiators />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -140,18 +178,20 @@ function PlanCard({ plan, isCurrentPlan, onSelect }: PlanCardProps) {
   const isPopular = plan.is_popular;
   const isFree = plan.pricing_model === 'free';
   const isEnterprise = plan.pricing_model === 'enterprise';
-  const isPayPerResult = plan.pricing_model === 'pay_per_result';
+  const isPro = plan.pricing_model === 'pro';
+  const isTeam = plan.pricing_model === 'team';
 
   const getPrice = () => {
     if (isFree) return '$0';
-    if (isPayPerResult) return '$0.50';
     if (isEnterprise) return 'Custom';
-    return `$${plan.base_price_usd}`;
+    if (isPro || isTeam) {
+      return `$${plan.base_price_usd?.toFixed(2) ?? '0'}`;
+    }
+    return `$${plan.base_price_usd ?? 0}`;
   };
 
   const getPriceLabel = () => {
     if (isFree) return '/month';
-    if (isPayPerResult) return '/automation';
     if (isEnterprise) return 'pricing';
     return '/month';
   };

@@ -27,7 +27,7 @@ export function PricingCalculator() {
   };
 
   const valueSaved = costEstimate?.value_saved_usd ?? 0;
-  const planCost = costEstimate?.plan_cost_usd ?? 39;
+  const planCost = costEstimate?.plan_cost_usd ?? 19.99;
   const netSavings = costEstimate?.net_savings_usd ?? 0;
   const roiMultiplier = costEstimate?.roi_multiplier ?? 0;
 
@@ -96,9 +96,7 @@ export function PricingCalculator() {
           <Separator className="my-2" />
           <div className="flex items-center justify-between">
             <span className="font-semibold">Net savings</span>
-            <span className="text-2xl font-bold text-primary">
-              ${netSavings.toLocaleString()}
-            </span>
+            <span className="text-2xl font-bold text-primary">${netSavings.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-primary/10 rounded-md">
             <TrendingUp className="h-4 w-4 text-primary" />
