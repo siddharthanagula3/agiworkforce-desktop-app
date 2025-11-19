@@ -235,6 +235,109 @@ We've just completed a major update bringing **9 professional-grade features** i
 
 ---
 
+## 🎨 **NEW: Unified Agentic Chat Interface** (November 2025)
+
+We've just completed a **comprehensive 4-phase refactor** that transforms AGI Workforce into a unified, **Claude Desktop-style** agentic chat experience!
+
+### **What's New:**
+
+#### **1. Simplified, Beautiful Interface** 🎯
+- **Single Chat View**: One unified chat interface (like Claude Desktop) - no more fragmented panels
+- **Streamlined Navigation**: Reduced sidebar to just Chat + Settings
+- **Agent Library**: Moved AI Employees to Settings for cleaner access
+- **Real-time Status**: Agent activity banner shows what the AI is doing
+
+#### **2. Enhanced Safety with Conversation Modes** 🛡️
+- **Safe Mode (Default)**: Requires your approval for dangerous operations
+  - File deletions, terminal commands, API calls, git push, database operations
+  - Modal dialog with risk indicators (low/medium/high)
+  - Full operation details before approval
+- **Full Control Mode**: Autonomous execution for trusted workflows
+- **Inline Approvals**: Approve/reject dangerous operations directly in chat
+
+#### **3. Smart Model Management** ⚡
+- **Quick Model Selector**: Switch LLMs mid-conversation
+- **Favorites System**: Star your preferred models for quick access
+- **Search & Filter**: Find models by provider, capabilities, or context size
+- **Model Metadata**: See context windows, speed ratings, and specializations
+
+#### **4. Developer-Friendly Tools** 🛠️
+- **37 Production Tools**: Including new Git workflow, terminal execution, GitHub integration
+- **Diff Viewer with Revert**: See file changes with one-click revert
+- **Inline Tool Results**: File operations, terminal output, and screenshots in chat
+- **Progress Tracking**: Real-time updates on agent actions
+
+### **How It Works:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  You: "Create a React app and deploy to GitHub"            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Agent Status: "Analyzing request..." (10%)                 │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🛡️ APPROVAL REQUIRED (Safe Mode)                          │
+│                                                             │
+│  Risk Level: HIGH ⚠️                                        │
+│  Operation: Execute terminal command                        │
+│  Command: npm create vite@latest my-app --template react   │
+│                                                             │
+│  [Approve] [Reject]                                         │
+└────────────────────────┬────────────────────────────────────┘
+                         │ (You click Approve)
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Agent Status: "Executing: npm create vite..." (60%)        │
+│                                                             │
+│  ✅ Terminal: npm create vite@latest                        │
+│     Exit code: 0                                            │
+│     Duration: 2.3s                                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🛡️ APPROVAL REQUIRED                                       │
+│                                                             │
+│  Risk Level: HIGH ⚠️                                        │
+│  Operation: Push to GitHub                                  │
+│  Repository: my-app                                         │
+│                                                             │
+│  [Approve] [Reject]                                         │
+└────────────────────────┬────────────────────────────────────┘
+                         │ (You click Approve)
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ✅ Task Complete!                                          │
+│                                                             │
+│  - Created React app                                        │
+│  - Initialized Git repository                               │
+│  - Created GitHub repository                                │
+│  - Pushed code to GitHub                                    │
+│                                                             │
+│  Repository: https://github.com/you/my-app                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **Key Benefits:**
+
+| Feature | Before | After |
+| ------- | ------ | ----- |
+| **Navigation** | 7+ sidebar tabs | 2 tabs (Chat + Settings) |
+| **Safety** | No approval prompts | Smart approval system |
+| **Model Switching** | Via settings only | Quick selector in chat |
+| **Agent Visibility** | Hidden background work | Real-time status banner |
+| **Approvals** | None | Modal + inline cards |
+| **File Changes** | View only | View + revert button |
+
+**See [STATUS.md](STATUS.md) for complete technical details and implementation timeline.**
+
+---
+
 ## ⚡ **Why AGI Workforce Beats Cursor**
 
 | Feature                | Cursor (Electron) | AGI Workforce (Tauri)  | Advantage            |

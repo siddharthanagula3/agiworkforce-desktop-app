@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AGI Workforce is an autonomous desktop automation platform built on **Tauri 2.0, React 18, TypeScript, and Rust**. Windows-first agent that orchestrates desktop automation, browser control, API workflows, and marketplace extensions while routing intelligently across multiple LLMs (including local models via Ollama).
 
-**Status:** Production Ready (Nov 2025) - A+ Grade. 19 tools, 4 LLM providers, 266 Tauri commands. TypeScript errors: ~1,200 → <100. Real SSE streaming, MCP integration (1000+ tools), 9 Claude Code/Cursor features implemented.
+**Status:** Production Ready (Nov 2025) - A+ Grade. **37 production tools**, 8 LLM providers, 266 Tauri commands. TypeScript errors: ~1,200 → <100. Real SSE streaming, MCP integration (1000+ tools), 9 Claude Code/Cursor features implemented.
+
+**Latest Update (Nov 19, 2025):** ✨ **Unified Agentic Chat Interface** - Complete Claude Desktop-style refactor with safety controls, approval system, and favorites management.
 
 ## Essential Commands
 
@@ -38,7 +40,12 @@ pnpm test -- chatStore.test.ts                   # Single test file
 
 - **Stack:** React 18, TypeScript 5.4+, Vite, Zustand, Radix UI, Tailwind
 - **Stores:** `apps/desktop/src/stores/` - each feature has its own store
-- **Key Libraries:** Monaco Editor, xterm.js, react-markdown
+- **Key Libraries:** Monaco Editor, xterm.js, react-markdown, react-diff-viewer-continued
+- **New Components (Nov 2025):**
+  - `ApprovalModal.tsx` - Modal for dangerous operation approvals
+  - `AgentStatusBanner.tsx` - Real-time agent activity display
+  - `ChatInputToolbar.tsx` - Model selector + safety mode toggle
+  - `FavoriteModelsSelector.tsx` - Model favorites management
 
 ### Backend (Rust/Tauri)
 
@@ -59,7 +66,17 @@ pnpm test -- chatStore.test.ts                   # Single test file
 **Core Layer:**
 
 - `core.rs` - Central orchestrator
-- `tools.rs` - 19 production tools (file ops, UI automation, browser, DB, API, vision, code exec)
+- `tools.rs` - **37 production tools** including:
+  - File operations (read, write, create, delete, move)
+  - Terminal execution (`terminal_execute`)
+  - Git workflow (`git_init`, `git_add`, `git_commit`, `git_push`)
+  - GitHub integration (`github_create_repo`)
+  - UI automation (click, type, screenshot)
+  - Browser control (navigate, extract, `physical_scrape`)
+  - Database operations (4 DB types supported)
+  - API integration (REST, GraphQL)
+  - Vision/OCR capabilities
+  - Code execution (sandboxed)
 - `knowledge.rs` - SQLite knowledge base (goals, plans, experiences)
 - `planner.rs` - LLM-powered planning
 - `executor.rs` - Step execution with dependency resolution
@@ -81,10 +98,11 @@ pnpm test -- chatStore.test.ts                   # Single test file
 
 ### Multi-LLM Router (`router/`)
 
-- **Providers:** OpenAI, Anthropic, Google, Ollama (local)
+- **Providers:** OpenAI, Anthropic, Google, Ollama (local), XAI (Grok), DeepSeek, Qwen, Mistral
 - **Strategy:** Prioritize Ollama (free), fallback to cloud based on quality/cost
 - **Features:** Real SSE streaming, function calling, cost tracking, response caching
 - **Credentials:** Windows Credential Manager (DPAPI), never SQLite
+- **Security:** Conversation modes (safe/full_control) with dangerous tool detection
 
 ### MCP Code Execution
 
@@ -136,6 +154,44 @@ Self-healing element finding with natural language queries.
 browser.click_semantic("the login button").await?;  // Survives UI changes
 ```
 
+### Unified Chat Interface (Nov 2025)
+
+**Complete Claude Desktop-style refactor in 4 phases:**
+
+**Phase 1: UI Unification**
+- Default view: `enhanced-chat` (single unified chat)
+- Simplified sidebar: Chat + Settings only
+- AI Employees → Settings "Agent Library" tab
+
+**Phase 2: Tool Aggregation**
+- Extended to 37 tools (from 30)
+- Added: `terminal_execute`, Git workflow (4 commands), `github_create_repo`, `physical_scrape`
+- Agent status events: "Analyzing request...", "Planning actions...", "Executing: {tool}"
+
+**Phase 3: Security System**
+- **Conversation Modes:**
+  - `safe` (default): Requires approval for dangerous operations
+  - `full_control`: Autonomous execution
+- **Dangerous Tools:** 17+ categories (file ops, terminal, git push, API, DB, browser, UI automation)
+- **ToolExecutor Security:** Checks mode before executing, emits `approval:request` events
+- **Backend Integration:** `tool_executor.rs` with complete security enforcement
+
+**Phase 4: Frontend Approval & Favorites**
+- **ApprovalModal:** Modal dialog for dangerous operations (risk indicators, approve/reject)
+- **Event Handling:** `useAgenticEvents` listens for `approval:request`
+- **ApprovalRequestCard:** Inline approval cards in chat messages
+- **DiffViewer:** Enhanced with revert button for file changes
+- **FavoriteModelsSelector:** Settings component for managing favorite models (search, filter, star)
+
+**State Management:**
+- `unifiedChatStore.ts`: Added `conversationMode`, `agentStatus`, `pendingApprovals`
+- `modelStore.ts`: Added `favorites`, `recentModels` tracking
+
+**Tauri Commands:**
+- `approve_operation(approval_id)` - Approve dangerous operation
+- `reject_operation(approval_id, reason)` - Reject dangerous operation
+- Both emit events: `agi:approval_granted` / `agi:approval_denied`
+
 ### Claude Code/Cursor Features
 
 1. **Command Palette** - Recent commands, frequency tracking, fuzzy search
@@ -147,6 +203,7 @@ browser.click_semantic("the login button").await?;  // Survives UI changes
 7. **Shortcuts** - Platform-aware (Cmd/Ctrl), form-aware, scoped
 8. **Progress Indicator** - Real-time step visualization with timeline
 9. **Testing** - Zero TS/ESLint errors, 70-80% coverage
+10. **🆕 Unified Chat** - Claude Desktop-style interface with safety controls
 
 ## TypeScript Configuration
 
