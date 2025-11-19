@@ -158,39 +158,232 @@ browser.click_semantic("the login button").await?;  // Survives UI changes
 
 **Complete Claude Desktop-style refactor in 4 phases:**
 
-**Phase 1: UI Unification**
-- Default view: `enhanced-chat` (single unified chat)
-- Simplified sidebar: Chat + Settings only
-- AI Employees → Settings "Agent Library" tab
+#### **Phase 1: UI Unification**
 
-**Phase 2: Tool Aggregation**
-- Extended to 37 tools (from 30)
-- Added: `terminal_execute`, Git workflow (4 commands), `github_create_repo`, `physical_scrape`
-- Agent status events: "Analyzing request...", "Planning actions...", "Executing: {tool}"
+**Files Modified:**
+- `apps/desktop/src/App.tsx` - Changed `currentView` default to `enhanced-chat`, removed old chat case
+- `apps/desktop/src/components/Layout/Sidebar.tsx` - Reduced `navigationItems` to Chat only
+- `apps/desktop/src/components/Settings/SettingsPanel.tsx` - Added "Agent Library" tab with `EmployeesPage`
 
-**Phase 3: Security System**
-- **Conversation Modes:**
-  - `safe` (default): Requires approval for dangerous operations
-  - `full_control`: Autonomous execution
-- **Dangerous Tools:** 17+ categories (file ops, terminal, git push, API, DB, browser, UI automation)
-- **ToolExecutor Security:** Checks mode before executing, emits `approval:request` events
-- **Backend Integration:** `tool_executor.rs` with complete security enforcement
+**Key Changes:**
+```typescript
+// App.tsx - Default view is now unified chat
+const [currentView, setCurrentView] = useState<AppView>('enhanced-chat');
 
-**Phase 4: Frontend Approval & Favorites**
-- **ApprovalModal:** Modal dialog for dangerous operations (risk indicators, approve/reject)
-- **Event Handling:** `useAgenticEvents` listens for `approval:request`
-- **ApprovalRequestCard:** Inline approval cards in chat messages
-- **DiffViewer:** Enhanced with revert button for file changes
-- **FavoriteModelsSelector:** Settings component for managing favorite models (search, filter, star)
+// Sidebar.tsx - Simplified navigation
+const navigationItems = [
+  { id: 'enhanced-chat' as AppView, label: 'Chat', icon: MessageCircle },
+];
+```
+
+#### **Phase 2: Tool Aggregation**
+
+**Files Modified:**
+- `apps/desktop/src-tauri/src/agi/tools.rs` - Extended tool registry to 37 tools
+- `apps/desktop/src-tauri/src/commands/chat.rs` - Added agent status event emissions
+
+**New Tools Added:**
+```rust
+// Terminal Operations
+Tool { id: "terminal_execute", capabilities: [CodeExecution, SystemOperation] }
+
+// Git Workflow
+Tool { id: "git_init", capabilities: [CodeExecution, FileOperation] }
+Tool { id: "git_add", capabilities: [CodeExecution, FileOperation] }
+Tool { id: "git_commit", capabilities: [CodeExecution, FileOperation] }
+Tool { id: "git_push", capabilities: [CodeExecution, NetworkOperation] }
+
+// GitHub Integration
+Tool { id: "github_create_repo", capabilities: [NetworkOperation, APIIntegration] }
+
+// Physical Scrape (Composite Tool)
+Tool { id: "physical_scrape",
+      capabilities: [BrowserAutomation, UIAutomation, TextProcessing],
+      dependencies: ["browser_navigate", "ui_click"] }
+```
+
+**Agent Status Events:**
+```rust
+// chat.rs - Emit status updates during execution
+app_handle.emit("agent:status:update", json!({
+    "id": "main_agent",
+    "status": "running",
+    "currentStep": "Analyzing request...",
+    "progress": 10
+}));
+```
+
+#### **Phase 3: Security System**
+
+**Files Modified:**
+- `apps/desktop/src-tauri/src/router/tool_executor.rs` - Complete security implementation
+- `apps/desktop/src/stores/unifiedChatStore.ts` - Added `conversationMode` state
+
+**Security Architecture:**
+```rust
+// tool_executor.rs - Dangerous tool detection
+const DANGEROUS_TOOLS: &[&str] = &[
+    "file_write", "file_delete", "terminal_execute", "git_push",
+    "github_create_repo", "api_call", "api_upload", "cloud_upload",
+    "email_send", "db_execute", "db_transaction_begin", "code_execute",
+];
+
+fn is_dangerous_tool(tool_id: &str) -> bool {
+    DANGEROUS_TOOLS.contains(&tool_id)
+        || tool_id.starts_with("ui_")
+        || tool_id.starts_with("automation_")
+        || tool_id.starts_with("browser_")
+}
+
+// Security check before execution
+if is_dangerous_tool(&tool_call.name) &&
+   self.conversation_mode.as_deref() == Some("safe") {
+    // Emit approval request
+    app_handle.emit("approval:request", json!({
+        "id": uuid::Uuid::new_v4().to_string(),
+        "type": "tool_execution",
+        "toolName": tool_call.name,
+        "description": format!("Agent wants to execute: {}", tool.name),
+        "riskLevel": "high",
+        "details": { "tool": tool.name, "arguments": args },
+        "status": "pending",
+    }));
+
+    return Ok(ToolResult {
+        success: false,
+        error: Some("User approval required".to_string()),
+        metadata: HashMap::from([("requires_approval", json!(true))]),
+    });
+}
+```
+
+**Conversation Mode Flow:**
+```
+Frontend (ChatInputToolbar)
+  → Store (conversationMode: 'safe' | 'full_control')
+  → Tauri Command (chat_send_message with conversation_mode param)
+  → Backend (chat.rs wires to ToolExecutor)
+  → ToolExecutor (checks mode before executing dangerous tools)
+  → Emit approval:request if needed
+```
+
+#### **Phase 4: Frontend Approval & Favorites**
+
+**New Components:**
+
+1. **ApprovalModal** (`apps/desktop/src/components/UnifiedAgenticChat/ApprovalModal.tsx`)
+   - Displays first pending approval from `pendingApprovals` queue
+   - Risk level badges (low/medium/high) with color coding
+   - Shows operation details, impact, and timeout countdown
+   - Calls `approve_operation` or `reject_operation` Tauri commands
+   ```typescript
+   const currentApproval = pendingApprovals.find(a => a.status === 'pending');
+
+   const handleApprove = async () => {
+     await invoke('approve_operation', { approvalId: currentApproval.id });
+     approveOperation(currentApproval.id); // Update store
+   };
+   ```
+
+2. **AgentStatusBanner** (`apps/desktop/src/components/UnifiedAgenticChat/AgentStatusBanner.tsx`)
+   - Displays real-time agent activity above chat input
+   - Shows current step, progress bar (0-100%), resource usage
+   - Color-coded by status (blue=running, green=completed, red=failed, yellow=paused)
+
+3. **ChatInputToolbar** (`apps/desktop/src/components/UnifiedAgenticChat/ChatInputToolbar.tsx`)
+   - Provides model selection via `QuickModelSelector`
+   - Safety mode toggle: Shield icon (safe) ↔ ShieldOff icon (full_control)
+   ```typescript
+   const toggleSafetyMode = () => {
+     const newMode = conversationMode === 'safe' ? 'full_control' : 'safe';
+     setConversationMode(newMode);
+   };
+   ```
+
+4. **FavoriteModelsSelector** (`apps/desktop/src/components/Settings/FavoriteModelsSelector.tsx`)
+   - Search across all 60+ models from 8 providers
+   - Provider grouping with expand/collapse
+   - Star/unstar with `toggleFavorite()` action
+   - Shows model metadata (context window, speed, capabilities)
+
+**Enhanced Components:**
+
+- **DiffViewer** - Added `enableRevert` prop and `onRevert` callback
+  ```typescript
+  <DiffViewer
+    oldContent={file.oldContent}
+    newContent={file.newContent}
+    enableRevert={true}
+    onRevert={async () => {
+      await invoke('file_write', { path: file.path, content: file.oldContent });
+    }}
+  />
+  ```
+
+**Event Handling:**
+```typescript
+// useAgenticEvents.ts - Listen for approval requests
+const unlistenApprovalRequest = await listen<any>('approval:request', (event) => {
+  const approval = {
+    id: event.payload.id,
+    type: event.payload.type || 'terminal_command',
+    description: event.payload.description,
+    riskLevel: event.payload.riskLevel || 'high',
+    details: event.payload.details || {},
+  };
+  addApprovalRequest(approval);
+});
+```
 
 **State Management:**
-- `unifiedChatStore.ts`: Added `conversationMode`, `agentStatus`, `pendingApprovals`
-- `modelStore.ts`: Added `favorites`, `recentModels` tracking
+
+`unifiedChatStore.ts`:
+```typescript
+interface UnifiedChatState {
+  conversationMode: ConversationMode; // 'safe' | 'full_control'
+  agentStatus: AgentStatus | null;
+  pendingApprovals: ApprovalRequest[];
+
+  setConversationMode: (mode: ConversationMode) => void;
+  setAgentStatus: (status: AgentStatus | null) => void;
+  addApprovalRequest: (request: Omit<ApprovalRequest, 'createdAt' | 'status'>) => void;
+  approveOperation: (id: string) => void;
+  rejectOperation: (id: string, reason?: string) => void;
+}
+```
+
+`modelStore.ts`:
+```typescript
+interface ModelState {
+  favorites: string[]; // Model IDs
+  recentModels: string[]; // Last 5 used models
+
+  toggleFavorite: (modelId: string) => void;
+  addToRecent: (modelId: string) => void;
+}
+```
 
 **Tauri Commands:**
-- `approve_operation(approval_id)` - Approve dangerous operation
-- `reject_operation(approval_id, reason)` - Reject dangerous operation
-- Both emit events: `agi:approval_granted` / `agi:approval_denied`
+- `approve_operation(approval_id)` - Updates ApprovalWorkflow, emits `agi:approval_granted` & `approval:granted`
+- `reject_operation(approval_id, reason)` - Updates ApprovalWorkflow, emits `agi:approval_denied` & `approval:denied`
+- Both located in `apps/desktop/src-tauri/src/commands/operations.rs`
+
+**Integration:**
+```typescript
+// UnifiedAgenticChat/index.tsx - All components integrated
+<AgentStatusBanner /> {/* Above chat input */}
+<ChatInputToolbar />  {/* Model selector + safety toggle */}
+<ApprovalModal />     {/* Rendered at root level */}
+
+// Send message with conversation mode
+await invoke('chat_send_message', {
+  request: {
+    content,
+    conversation_mode: conversationMode, // 'safe' or 'full_control'
+    enable_tools: true,
+  },
+});
+```
 
 ### Claude Code/Cursor Features
 
@@ -243,12 +436,106 @@ Use `nvm use` to auto-switch Node version.
 2. Test end-to-end
 3. Update `STATUS.md`
 
+### Extending the Unified Chat System
+
+#### **Adding a New Tool**
+
+1. **Define tool in `tools.rs`:**
+```rust
+self.register_tool(Tool {
+    id: "my_new_tool".to_string(),
+    name: "My New Tool".to_string(),
+    description: "Does something useful".to_string(),
+    capabilities: vec![ToolCapability::FileOperation],
+    parameters: vec![/* ... */],
+    dependencies: vec![],
+})?;
+```
+
+2. **Implement execution logic:**
+```rust
+// In execute_tool_impl()
+"my_new_tool" => {
+    let param = args.get("param").ok_or("Missing param")?;
+    // Implementation here
+    Ok(ToolResult { success: true, data: json!(result), error: None })
+}
+```
+
+3. **If dangerous, add to security check in `tool_executor.rs`:**
+```rust
+const DANGEROUS_TOOLS: &[&str] = &[
+    // ... existing tools
+    "my_new_tool", // Add here if dangerous
+];
+```
+
+#### **Adding a New Event Type**
+
+1. **Define TypeScript interface:**
+```typescript
+// In useAgenticEvents.ts
+export interface MyNewEvent {
+  myData: string;
+  timestamp: Date;
+}
+```
+
+2. **Add listener:**
+```typescript
+const unlistenMyEvent = await listen<MyNewEvent>('my:event', (event) => {
+  console.log('[useAgenticEvents] My event:', event.payload);
+  // Handle event
+});
+unlistenFns.current.push(unlistenMyEvent);
+```
+
+3. **Emit from Rust:**
+```rust
+app_handle.emit("my:event", json!({
+    "myData": "value",
+    "timestamp": chrono::Utc::now().to_rfc3339(),
+}))?;
+```
+
+#### **Adding a New Approval Type**
+
+1. **Update `ApprovalRequest` type in `unifiedChatStore.ts`:**
+```typescript
+export interface ApprovalRequest {
+  type: 'file_delete' | 'terminal_command' | 'api_call' | 'data_modification' | 'my_new_type';
+  // ... rest of fields
+}
+```
+
+2. **Update `TYPE_ICONS` in `ApprovalRequestCard.tsx`:**
+```typescript
+const TYPE_ICONS = {
+  my_new_type: MyIcon,
+  // ... existing types
+};
+```
+
+3. **Emit from backend:**
+```rust
+app_handle.emit("approval:request", json!({
+    "id": uuid::Uuid::new_v4().to_string(),
+    "type": "my_new_type",
+    "description": "Needs approval for...",
+    "riskLevel": "medium",
+    "details": { /* ... */ },
+}));
+```
+
 ### Security Rules
 
 - **Never** store API keys in SQLite - use Windows Credential Manager
 - **Always** require permission prompts for automation (filesystem, browser, UI)
 - **Always** use Tauri capabilities system for sandboxing
 - **Always** log MCP invocations for audit
+- **Always** check conversation mode before executing dangerous tools
+- **Always** emit approval events in safe mode for dangerous operations
+- **Always** validate user approval before proceeding with dangerous operations
 
 ## Common Issues
 
