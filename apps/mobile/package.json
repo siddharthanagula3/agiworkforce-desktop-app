@@ -27,6 +27,6 @@
     "@types/react": "^19.2.2",
     "@types/react-native": "^0.73.0",
     "typescript": "^5.4.5",
-    "vitest": "^4.0.8"
+    "vitest": "^4.0.13"
   }
 }
