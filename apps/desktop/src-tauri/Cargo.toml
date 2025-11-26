@@ -104,7 +104,7 @@ rdev = "0.5"
 screenshots = "0.8"
 
 # Input Simulation (cross-platform fallback)
-enigo = { version = "0.2", features = ["serde"] }
+enigo = { version = "0.6", features = ["serde"] }
 
 # Terminal/PTY
 portable-pty = "0.8"
