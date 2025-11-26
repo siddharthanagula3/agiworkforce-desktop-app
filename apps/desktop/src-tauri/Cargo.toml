@@ -168,7 +168,7 @@ sysinfo = "0.30"
 
 # Compression
 flate2 = "1.0"
-zip = "0.6"
+zip = "6.0"
 
 # Document processing (reading)
 pdf-extract = "0.5"
